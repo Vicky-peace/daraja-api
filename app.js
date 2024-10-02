@@ -2,11 +2,24 @@ import express from "express";
 import dotenv from "dotenv";
 import cors from "cors";
 import axios from "axios";
+import mongoose from "mongoose";
+import Payment from "./paymentModel.js";
 
 dotenv.config();
 
 const app = express();
 const port = process.env.PORT || 8000;
+
+
+
+mongoose.connect(process.env.MONGO_URI)
+ .then(()=>{
+  console.log("Database connected successfully")
+})
+  .catch((err)=>{
+    console.log(err.message)
+
+});
 
 app.use(cors());
 app.use(express.json());
@@ -106,7 +119,7 @@ app.post("/stkpush", async (req, res) => {
         PartyA: formattedPhone,
         PartyB: businessShortCode, // For till numbers, use the till number
         PhoneNumber: formattedPhone,
-        CallBackURL: "https://mydomain.com/pat", // Replace with your actual callback URL
+        CallBackURL: "https://b3c3-196-250-215-103.ngrok-free.app/callback", // Replace with your actual callback URL
         AccountReference: "Test", // Any reference for your accounting
         TransactionDesc: "Test",
       },
@@ -128,4 +141,37 @@ app.post("/stkpush", async (req, res) => {
       error: error.response ? error.response.data : "Internal Server Error",
     });
   }
+});
+
+app.post('/callback', (req,res) =>{
+  const callbackData = req.body;
+  console.log(callbackData.Body);
+  if(!callbackData.Body.stkCallback.CallbackMetadata){
+    console.log(callbackData.Body);
+    res.json('ok')
+  }
+
+  console.log(callbackData.Body.stkCallback.CallbackMetadata);
+
+  const phoneNumber = callbackData.Body.stkCallback.CallbackMetadata.Item[4].Value;
+  const amount = callbackData.Body.stkCallback.CallbackMetadata.Item[0].Value;
+  const transaction_id = callbackData.Body.stkCallback.CallbackMetadata.Item[1].Value;
+
+  console.log({phoneNumber, amount, transaction_id});
+
+  const payment = new Payment();
+
+  payment.number = phoneNumber;
+  payment.amount = amount;
+  payment.transaction_id = transaction_id;
+
+  payment.save()
+    .then((result) =>{
+      console.log(result);
+      res.json({message: 'Data saved successfully'})
+    })
+    .catch((err) =>{
+      console.log(err);
+      res.json({message: 'An error occurred'})
+    })
 });
