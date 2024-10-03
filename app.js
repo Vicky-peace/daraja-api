@@ -157,7 +157,7 @@ const phoneNumber = callBackData.Body.stkCallback.CallbackMetadata.Item[4].Value
 const amount = callBackData.Body.stkCallback.CallbackMetadata.Item[0].Value;
 const transaction_id = callBackData.Body.stkCallback.CallbackMetadata.Item[1].Value;
 
-const payment = new Payment()
+const payment = new Payment();
 
 payment.phone = phoneNumber;
 payment.amount = amount;
@@ -169,6 +169,7 @@ payment.save()
 .then((data) =>{
   console.log({message: "Payment saved successfully", data});
 })
+//catch the error
 .catch((err) =>{
   console.log(err.message)
 })
