@@ -3,7 +3,7 @@ import dotenv from "dotenv";
 import cors from "cors";
 import axios from "axios";
 import mongoose from "mongoose";
-import Payment from "./paymentModel.js";
+import Payment from "./models/paymentModel.js";
 
 dotenv.config();
 
@@ -119,7 +119,7 @@ app.post("/stkpush", async (req, res) => {
         PartyA: formattedPhone,
         PartyB: businessShortCode, // For till numbers, use the till number
         PhoneNumber: formattedPhone,
-        CallBackURL: "https://b3c3-196-250-215-103.ngrok-free.app/callback", // Replace with your actual callback URL
+        CallBackURL: "https://3b87-196-250-210-145.ngrok-free.app/callback", // Replace with your actual callback URL
         AccountReference: "Test", // Any reference for your accounting
         TransactionDesc: "Test",
       },
@@ -144,34 +144,32 @@ app.post("/stkpush", async (req, res) => {
 });
 
 app.post('/callback', (req,res) =>{
-  const callbackData = req.body;
-  console.log(callbackData.Body);
-  if(!callbackData.Body.stkCallback.CallbackMetadata){
-    console.log(callbackData.Body);
-    res.json('ok')
+ const callBackData = req.body;
+  console.log(callBackData.Body);
+
+  if(!callBackData.Body.stkCallback.CallbackMetadata){
+    console.log(callBackData.Body)
+    return res.json('ok');
   }
+console.log(callBackData.Body.stkCallback.CallbackMetadata)
 
-  console.log(callbackData.Body.stkCallback.CallbackMetadata);
+const phoneNumber = callBackData.Body.stkCallback.CallbackMetadata.Item[4].Value;
+const amount = callBackData.Body.stkCallback.CallbackMetadata.Item[0].Value;
+const transaction_id = callBackData.Body.stkCallback.CallbackMetadata.Item[1].Value;
 
-  const phoneNumber = callbackData.Body.stkCallback.CallbackMetadata.Item[4].Value;
-  const amount = callbackData.Body.stkCallback.CallbackMetadata.Item[0].Value;
-  const transaction_id = callbackData.Body.stkCallback.CallbackMetadata.Item[1].Value;
+const payment = new Payment()
 
-  console.log({phoneNumber, amount, transaction_id});
+payment.phone = phoneNumber;
+payment.amount = amount;
+payment.transaction_id = transaction_id;
 
-  const payment = new Payment();
 
-  payment.number = phoneNumber;
-  payment.amount = amount;
-  payment.transaction_id = transaction_id;
 
-  payment.save()
-    .then((result) =>{
-      console.log(result);
-      res.json({message: 'Data saved successfully'})
-    })
-    .catch((err) =>{
-      console.log(err);
-      res.json({message: 'An error occurred'})
-    })
+payment.save()
+.then((data) =>{
+  console.log({message: "Payment saved successfully", data});
+})
+.catch((err) =>{
+  console.log(err.message)
+})
 });
